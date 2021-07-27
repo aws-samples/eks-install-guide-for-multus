@@ -1,0 +1,22 @@
+{
+  "app": "npx ts-node --prefer-ts-exts bin/eks-nodegroup-multus-example.ts",
+  "context": {
+    "@aws-cdk/core:enableStackNameDuplicates": "true",
+    "aws-cdk:enableDiffNoFail": "true",
+    "@aws-cdk/core:stackRelativeExports": "true",
+    "@aws-cdk/aws-ecr-assets:dockerIgnoreSupport": true,
+    "@aws-cdk/aws-secretsmanager:parseOwnedSecretName": true,
+    "eks.vpcid": "vpc-09dd93a63e8e51d36",
+    "eks.clustername":  "eks-multus-cluster",
+    "eks.nodegroupname":  "multus-ng-01",
+    "nodegroup.min": 1,
+    "nodegroup.max": 1,
+    "nodegroup.desired": 1,
+    "nodegroup.instance": "c5.large",
+    "nodegroup.disk": 50,
+    "nodegroup.sshkey": "node-access",
+    "eks.k8ssubnetid": "subnet-0f49a809022203b27",
+    "eks.multussubnet1": "subnet-011bf61546c4b7ca9",
+    "eks.multussecgroup1": "sg-05ed2eea226cc1dcf"
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "name": "eks-nodegroup-multus-example",
+  "version": "1.0.0",
+  "bin": {
+    "eks-nodegroup-multus-example": "bin/eks-nodegroup-multus-example.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "test": "jest",
+    "cdk": "cdk"
+  },
+  "devDependencies": {
+    "@aws-cdk/assert": "*",
+    "@types/jest": "^26.0.10",
+    "@types/node": "10.17.27",
+    "jest": "^26.4.2",
+    "ts-jest": "^26.2.0",
+    "aws-cdk": "*",
+    "ts-node": "^9.0.0",
+    "typescript": "~3.9.7"
+  },
+  "dependencies": {
+    "@aws-cdk/core": "*",
+    "@aws-cdk/aws-ec2": "*",
+    "@aws-cdk/aws-eks": "*",
+    "@aws-cdk/aws-events-targets": "*",
+    "@aws-cdk/aws-iam": "*",
+    "@aws-cdk/aws-lambda": "*",
+    "@aws-cdk/custom-resources": "*",
+    "console": "^0.7.2",
+    "source-map-support": "^0.5.16"
+  }
+}
