@@ -511,7 +511,7 @@ Resources:
   NodeLaunchConfig:
     Type: "AWS::AutoScaling::LaunchConfiguration"
     Properties:
-      AssociatePublicIpAddress: "true"
+      AssociatePublicIpAddress: "false"
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:

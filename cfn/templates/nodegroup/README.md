@@ -98,8 +98,7 @@
 * Let's go to Bastion host where we can run kubectl. 
 * Install multus CNI.
   ````
-  git clone https://github.com/intel/multus-cni.git 
-  kubectl apply -f ~/multus-cni/images/multus-daemonset.yml
+  kubectl apply -f https://eks-multus-cni-artifacts.s3.us-west-2.amazonaws.com/multus-daemonset.yml
   ````
 
 ## Create NetworkAttachmentDefinition

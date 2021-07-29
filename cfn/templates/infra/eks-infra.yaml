@@ -534,16 +534,6 @@ Outputs:
     Value: !Ref EksControlSecurityGroup
     Export:
       Name: !Sub "${AWS::StackName}-EksControlSecurityGroup"
-  PublicSubnetAz1:
-    Description: EKS WorkerNode PublicSubnet at AZ1. This will be used for K8s default networking.
-    Value: !Ref PubicSubnetAz1
-    Export:
-      Name: !Sub "${AWS::StackName}-PublicSubnetAz1"
-  PublicSubnetAz2:
-    Description: EKS WorkerNode PublicSubnet at AZ2. This will be used for K8s default networking.
-    Value: !Ref PublicSubnetAz2
-    Export:
-      Name: !Sub "${AWS::StackName}-PublicSubnetAz2"
   PrivateSubnetAz1:
     Description: EKS WorkerNode PrivateSubnet at AZ1. This will be used for K8s default networking.
     Value: !Ref PrivateSubnetAz1
