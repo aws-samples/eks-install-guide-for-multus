@@ -100,6 +100,14 @@
   ````
   kubectl apply -f https://eks-multus-cni-artifacts.s3.us-west-2.amazonaws.com/multus-daemonset.yml
   ````
+* Change the multus container image address inside multus-daemonset.yml before applying it to the cluster.
+  ````
+      containers:
+      - name: kube-multus
+        image: 940911992744.dkr.ecr.us-west-2.amazonaws.com/eks/multus-cni:v3.7.2-eksbuild.1
+  ````
+* Go to this [page](https://docs.aws.amazon.com/eks/latest/userguide/add-ons-images.html) and find the container image address for your region.
+
 
 ## Create NetworkAttachmentDefinition
 * Create below [networkAttachementDefinition](../../examples/multus-ipvlan-1.yaml) and apply it to the cluster.
