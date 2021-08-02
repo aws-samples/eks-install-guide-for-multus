@@ -98,7 +98,7 @@
 * Let's go to Bastion host where we can run kubectl. 
 * Install multus CNI.
   ````
-  kubectl apply -f https://eks-multus-cni-artifacts.s3.us-west-2.amazonaws.com/multus-daemonset.yml
+  kubectl apply -f https://raw.githubusercontent.com/aws/amazon-vpc-cni-k8s/master/config/multus/v3.7.2-eksbuild.1/aws-k8s-multus.yaml
   ````
 * Change the multus container image address inside multus-daemonset.yml before applying it to the cluster.
   ````
