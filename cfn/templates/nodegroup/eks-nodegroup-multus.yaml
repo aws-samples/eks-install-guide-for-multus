@@ -1,7 +1,6 @@
 # -----------------------------------------------------------
 #// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #// SPDX-License-Identifier: MIT-0
-# on the AWS EKS worker node ENIs for multus pods
 # author: Raghvendra Singh
 # -----------------------------------------------------------
 AWSTemplateFormatVersion: "2010-09-09"
