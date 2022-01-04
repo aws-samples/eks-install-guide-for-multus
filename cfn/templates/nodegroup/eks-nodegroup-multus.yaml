@@ -1,7 +1,6 @@
 # -----------------------------------------------------------
 #// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #// SPDX-License-Identifier: MIT-0
-# This code demonstrates how to use a sidecar|initContainer to automate the IP allocation
 # on the AWS EKS worker node ENIs for multus pods
 # author: Raghvendra Singh
 # -----------------------------------------------------------
