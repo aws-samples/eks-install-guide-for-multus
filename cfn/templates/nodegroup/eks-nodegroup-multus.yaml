@@ -1,6 +1,8 @@
 # -----------------------------------------------------------
 #// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #// SPDX-License-Identifier: MIT-0
+# This CFN template demonstrates how to create self managed EKS nodegroup 
+# using static/DHCP ip allocation method for EKS MULTUS nodegroup
 # author: Raghvendra Singh
 # -----------------------------------------------------------
 AWSTemplateFormatVersion: "2010-09-09"
