@@ -46,12 +46,12 @@ For this Strategy use ```useIPsFromStartOfSubnet: false``` settings while creati
     * NodeGroupName -> ng1
     * AutoScalingGroup Min/Desired/MaxSize -> 1/2/3
     * NodeInstanceType -> select EC2 flavor, based on the requirement (or choose default)
-    * NodeImageIdSSMParam --> Select default EKS optimized linux2 AMI (default release 1.21, change the release value, if needed)
+    * NodeImageIdSSMParam --> EKS optimized linux2 AMI release (default 1.21, change the release value, if needed)
     * NodeImageId --> (if using custome AMI then use AMIID, this option will override NodeImageIdSSMParam)
     * NodeVolumeSize --> configure Root Volume size (default 50 gb)
     * KeyName -> ee-default-keypair (or any ssh key you have)
     * BootstrapArguments -> configure your k8 node labels, (leave default if not sure)
-    * useIPsFromStartOfSubnet -> use true (if you wnat to use option 1 mentioned above) or false (if using option 2 i.e. cidr reservation )
+    * useIPsFromStartOfSubnet -> use true (to use option 1 mentioned above) or false (to use option 2 i.e. cidr reservation)
     * VpcId -> vpc-eks-multus-cluster (that you created)
     * Subnets -> privateAz1-eks-multus-cluster (this is for main primary K8s networking network)
     * MultusSubnets -> multus1Az1 and Multus2Az1
