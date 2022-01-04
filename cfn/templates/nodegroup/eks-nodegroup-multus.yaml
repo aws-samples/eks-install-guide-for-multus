@@ -1,4 +1,12 @@
+# -----------------------------------------------------------
+#// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#// SPDX-License-Identifier: MIT-0
+# This code demonstrates how to use a sidecar|initContainer to automate the IP allocation
+# on the AWS EKS worker node ENIs for multus pods
+# author: Raghvendra Singh
+# -----------------------------------------------------------
 AWSTemplateFormatVersion: "2010-09-09"
+###PROMPT> aws cloudformation create-stack --stack-name myteststack --template-body file:///home/testuser/mytemplate.json --parameters ParameterKey=Parm1,ParameterValue=test1 ParameterKey=Parm2,ParameterValue=test2
 
 Description: Amazon EKS - Node Group
 
@@ -30,6 +38,7 @@ Metadata:
           - NodeVolumeSize
           - KeyName
           - BootstrapArguments
+          - useIPsFromStartOfSubnet
       - Label:
           default: Worker Network Configuration
         Parameters:
@@ -39,60 +48,83 @@ Metadata:
           default: Multus CNI Configuration
         Parameters:
           - MultusSubnets
-          - MultusSecurityGroupIds
+          - MultusSecurityGroups
           - LambdaS3Bucket
           - LambdaS3Key
+          - InterfaceTags
 
 Parameters:
+  useIPsFromStartOfSubnet: 
+    AllowedValues: 
+       -  true
+       -  false
+    Default: True
+    Type: String
+    Description: "False -> use DHCP allocation (use it when using subnet CIDR reservation), True -> Allocate IPs from begining of the subnet(Lambda does this handling)"
+
+  InterfaceTags:
+    Type: String
+    Description: "(Optional) Any additional tags to be applied on the multus intf (Key value pair, separated by comma ex: cnf=abc01,type=5g)"
+
   BootstrapArguments:
     Type: String
-    Default: "--kubelet-extra-args '--node-labels=is_worker=true'"
+    Default: "--kubelet-extra-args '--node-labels=cnf=xyz'"
     Description: "Arguments to pass to the bootstrap script. See files/bootstrap.sh in https://github.com/awslabs/amazon-eks-ami"
+    AllowedPattern : ".+"
 
   ClusterControlPlaneSecurityGroup:
     Type: "AWS::EC2::SecurityGroup::Id"
     Description: The security group of the cluster control plane.
+    AllowedPattern : ".+"
 
   ClusterName:
     Type: String
     Description: The cluster name provided when the cluster was created. If it is incorrect, nodes will not be able to join the cluster.
+    AllowedPattern : ".+"
 
   KeyName:
     Type: "AWS::EC2::KeyPair::KeyName"
-    Description: The EC2 Key Pair to allow SSH access to the instances
+    Description:  (Optional) The EC2 SSH Key Pair to allow SSH access to the instances
 
   NodeAutoScalingGroupDesiredCapacity:
     Type: Number
-    Default: 3
+    Default: 2
     Description: Desired capacity of Node Group ASG.
 
   NodeAutoScalingGroupMaxSize:
     Type: Number
-    Default: 4
+    Default: 3
     Description: Maximum size of Node Group ASG. Set to at least 1 greater than NodeAutoScalingGroupDesiredCapacity.
 
   NodeAutoScalingGroupMinSize:
     Type: Number
-    Default: 1
+    Default: 2
     Description: Minimum size of Node Group ASG.
 
   NodeGroupName:
     Type: String
     Description: Unique identifier for the Node Group.
+    AllowedPattern : ".+"
 
   NodeImageId:
     Type: String
-    Default: ""
     Description: (Optional) Specify your own custom image ID. This value overrides any AWS Systems Manager Parameter Store value specified above.
 
   NodeImageIdSSMParam:
     Type: "AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>"
-    Default: /aws/service/eks/optimized-ami/1.19/amazon-linux-2/recommended/image_id
+    Default: /aws/service/eks/optimized-ami/1.21/amazon-linux-2/recommended/image_id
     Description: AWS Systems Manager Parameter Store parameter of the AMI ID for the worker node instances.
+
+  DisableIMDSv1:
+    Type: String
+    Default: "false"
+    AllowedValues:
+      - "false"
+      - "true"
 
   NodeInstanceType:
     Type: String
-    Default: c5.large
+    Default: c5.2xlarge
     AllowedValues:
       - a1.medium
       - a1.large
@@ -353,20 +385,22 @@ Parameters:
 
   NodeVolumeSize:
     Type: Number
-    Default: 20
+    Default: 50
     Description: Node volume size
 
   Subnets:
     Type: "List<AWS::EC2::Subnet::Id>"
-    Description: The subnets where workers can be created.
+    Description: The subnets where workers can be created for eth0 (Select only 1 subnet same AZ as other Multus network).
 
   MultusSubnets:
     Type: "List<AWS::EC2::Subnet::Id>"
     Description: The List of Multus subnets from where multus 2ndary ENI will be connected to.
 
-  MultusSecurityGroupIds:
+
+  MultusSecurityGroups:
     Type: "List<AWS::EC2::SecurityGroup::Id>"
-    Description: The security groups of the Multus Network Interfaces. Along with the order of security group selection, each will be assigned to each MultusSubnet in above list. If number of security group doesn't match with number of multus subnets, then the 1st security group will be used for all multus subnets.
+    Description: The security group of the Multus Network Interfaces.
+
   VpcId:
     Type: "AWS::EC2::VPC::Id"
     Description: The VPC of the worker instances
@@ -384,6 +418,10 @@ Conditions:
     - "Fn::Equals":
         - Ref: NodeImageId
         - ""
+  IMDSv1Disabled:
+    "Fn::Equals":
+      - !Ref DisableIMDSv1
+      - "true"
 
 Resources:
   NodeInstanceRole:
@@ -508,48 +546,59 @@ Resources:
       SourceSecurityGroupId: !Ref ClusterControlPlaneSecurityGroup
       ToPort: 443
 
-  NodeLaunchConfig:
-    Type: "AWS::AutoScaling::LaunchConfiguration"
+  NodeLaunchTemplate:
+    Type: "AWS::EC2::LaunchTemplate"
     Properties:
-      AssociatePublicIpAddress: "false"
-      BlockDeviceMappings:
-        - DeviceName: /dev/xvda
-          Ebs:
-            DeleteOnTermination: true
-            VolumeSize: !Ref NodeVolumeSize
-            VolumeType: gp2
-      IamInstanceProfile: !Ref NodeInstanceProfile
-      ImageId: !If
-        - HasNodeImageId
-        - Ref: NodeImageId
-        - Ref: NodeImageIdSSMParam
-      InstanceType: !Ref NodeInstanceType
-      KeyName: !Ref KeyName
-      SecurityGroups:
-        - Ref: NodeSecurityGroup
-      UserData: !Base64
-        "Fn::Sub": |
-          #!/bin/bash
-          set -o xtrace
-          /etc/eks/bootstrap.sh ${ClusterName} ${BootstrapArguments}
-          /opt/aws/bin/cfn-signal --exit-code $? \
-                   --stack  ${AWS::StackName} \
-                   --resource NodeGroup  \
-                   --region ${AWS::Region}
-          echo "net.ipv4.conf.default.rp_filter = 0" | tee -a /etc/sysctl.conf
-          echo "net.ipv4.conf.all.rp_filter = 0" | tee -a /etc/sysctl.conf
-          sudo sysctl -p
-          sleep 45
-          ls /sys/class/net/ > /tmp/ethList;cat /tmp/ethList |while read line ; do sudo ifconfig $line up; done
-          grep eth /tmp/ethList |while read line ; do echo "ifconfig $line up" >> /etc/rc.d/rc.local; done
-          systemctl enable rc-local
-          chmod +x /etc/rc.d/rc.local
+      LaunchTemplateData:
+        BlockDeviceMappings:
+          - DeviceName: /dev/xvda
+            Ebs:
+              DeleteOnTermination: true
+              VolumeSize: !Ref NodeVolumeSize
+              VolumeType: gp2
+        IamInstanceProfile:
+          Arn: !GetAtt NodeInstanceProfile.Arn
+        ImageId: !If
+          - HasNodeImageId
+          - !Ref NodeImageId
+          - !Ref NodeImageIdSSMParam
+        InstanceType: !Ref NodeInstanceType
+        KeyName: !Ref KeyName
+        SecurityGroupIds:
+        - !Ref NodeSecurityGroup
+        UserData: !Base64
+          "Fn::Sub": |
+            #!/bin/bash
+            set -o xtrace
+            echo "net.ipv4.conf.default.rp_filter = 0" | tee -a /etc/sysctl.conf
+            echo "net.ipv4.conf.all.rp_filter = 0" | tee -a /etc/sysctl.conf
+            sudo sysctl -p
+            sleep 30
+            ls /sys/class/net/ > /tmp/ethList;cat /tmp/ethList |while read line ; do sudo ifconfig $line up; done
+            grep eth /tmp/ethList |while read line ; do echo "ifconfig $line up" >> /etc/rc.d/rc.local; done
+            systemctl enable rc-local
+            chmod +x /etc/rc.d/rc.local
+            /etc/eks/bootstrap.sh ${ClusterName} ${BootstrapArguments}
+            /opt/aws/bin/cfn-signal --exit-code $? \
+                     --stack  ${AWS::StackName} \
+                     --resource NodeGroup  \
+                     --region ${AWS::Region}          
+
+        MetadataOptions:
+            HttpPutResponseHopLimit : 2
+            HttpEndpoint: enabled
+            HttpTokens: !If
+              - IMDSv1Disabled
+              - required
+              - optional
 
   NodeGroup:
     Type: "AWS::AutoScaling::AutoScalingGroup"
     Properties:
       DesiredCapacity: !Ref NodeAutoScalingGroupDesiredCapacity
-      LaunchConfigurationName: !Ref NodeLaunchConfig
+      LaunchTemplate:
+        LaunchTemplateId: !Ref NodeLaunchTemplate
+        Version: !GetAtt NodeLaunchTemplate.LatestVersionNumber      
       MaxSize: !Ref NodeAutoScalingGroupMaxSize
       MinSize: !Ref NodeAutoScalingGroupMinSize
       Tags:
@@ -611,6 +660,10 @@ Resources:
               Action: [
                 "ec2:CreateNetworkInterface",
                 "ec2:DescribeInstances",
+                "ec2:UnassignPrivateIpAddresses",
+                "ec2:UnassignIpv6Addresses",
+                "ec2:AssignPrivateIpAddresses",
+                "ec2:AssignIpv6Addresses",
                 "ec2:DetachNetworkInterface",
                 "ec2:ModifyNetworkInterfaceAttribute",
                 "ec2:DescribeSubnets",
@@ -643,11 +696,13 @@ Resources:
       Code:
         S3Bucket: !Ref LambdaS3Bucket
         S3Key: !Ref LambdaS3Key
-      Timeout: "60"
+      Timeout: "120"
       Environment:
         Variables:
           SubnetIds: !Join [ ",", !Ref MultusSubnets ]
-          SecGroupIds:  !Join [ ",", !Ref MultusSecurityGroupIds ]
+          SecGroupIds:  !Join [ ",", !Ref MultusSecurityGroups ]
+          useStaticIPs: !Ref useIPsFromStartOfSubnet
+          ENITags: !Ref InterfaceTags
 # End of Lambda
 
 # CloudWatch Event Trigger
@@ -709,12 +764,11 @@ Resources:
 
       Handler: index.handler
       Runtime: "python3.8"
-      Timeout: "60"
+      Timeout: "120"
       Role: !GetAtt RoleLambdaAttach2ndEniCfn.Arn
 
   CustomResource:
     Type: Custom::CustomResource
-    DependsOn: NodeGroup
     Properties:
       ServiceToken: !GetAtt 'LambdaReStartFunction.Arn'
       AsgName: !Ref NodeGroup
