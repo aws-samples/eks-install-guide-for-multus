@@ -4,7 +4,35 @@
 * Make sure EKS cluster is provisioned, if not please refer steps [here](../infra/README.md).
 * Please use [cfn/templates/nodegroup/eks-nodegroup-multus.yaml](./eks-nodegroup-multus.yaml) and [cfn/templates/nodegroup/lambda_function.zip](./lambda_function.zip) containing lambda functions.
 
-## Self-managed Node Group creation (with Multus CNI Plugin)
+## Self-managed Node Group IP management strategy 
+
+### Option 1 Allocate Worker IPs statically via a custom lambda-based solution
+This solution works on the logical subnet sharing model, between the workers and pods. In this model, worker nodes always start taking the free IPs from the beginning of the subnet and the pods start taking the IPs from end of the subnet. With this allocation strategy the IPs wont clash between workers and Pods. To make this model work, worker ENIs must get IPs statically from the first free available IPs from the subnet and not use DHCP allocation. 
+
+For this Strategy use ```useIPsFromStartOfSubnet: true``` settings while creating the [Self managed Node Group]( ##-Self-managed-Node-Group-creation ) section.
+
+### Option 2: Use VPC subnet cidr reservation (static) for pods IP addresses  
+This solution works on the subnet CIDR separation model, between the workers and pods. In this model, we would create a reservation of the pod IP addresses chunks (min subnet cidr reservation allowed is /28) for explicit (static) allocation only. The unreserved chunk of the subnet CIDR would be available for the DHCP (default) allocation for the worker nodes behind the autoscaling group. Please refer to VPC subnet CIDR reservation for more details. This would ensure that worker would never encroach in the reserved CIDRs for pod.
+
+Below is an example of creating a subnet CIDR reservation. This needs to be done for each multus based subnets, for desired multus pod IP ranges.
+
+```
+$ aws ec2 create-subnet-cidr-reservation --subnet-id  subnet-04b92f3c451542e6a --cidr 10.10.10.128/25 --reservation-type explicit
+{
+    "SubnetCidrReservation": {
+        "SubnetCidrReservationId": "scr-0d919a0ece72fd48b",
+        "SubnetId": "subnet-04b92f3c451542e6a",
+        "Cidr": "10.10.10.128/25",
+        "ReservationType": "explicit",
+        "OwnerId": "xxxxxxx"
+    }
+}
+```
+For this Strategy use ```useIPsFromStartOfSubnet: false``` settings while creating the [Self managed Node Group]( ##-Self-managed-Node-Group-creation ) section.
+
+
+## Self managed Node Group creation
+
 * Go to S3 and create bucket (folder/directory) with *Create bucket*.
 * Bucket name to be unique like *multus-cluster* (recommend to use your name or unique keyword), and then *Create bucket*.
 * Click the bucket you just created and drag & drop lambda_function.zip file (which you can find from /template directory of this GitHub). Then, click *Upload*.
@@ -13,17 +41,24 @@
     * Select *Create stack*, *with new resources(standard)*.
     * Click *Template is ready" (default), "Upload a template file", "Choose file". Select "eks-nodegroup-multus.yaml" file that you have downloaded from this GitHub. 
     * Stack name -> ng1
-    * ClusterName -> eks-multus-cluster (your own name)
+    * ClusterName -> eks-multus-cluster (your own cluster name)
     * ClusterControlPlaneSecurityGroup -> "eks-multus-cluster-EksControlSecurityGroup-xxxx"
     * NodeGroupName -> ng1
-    * Min/Desired/MaxSize -> 1/1/1
-    * KeyName -> ee-default-keypair
+    * AutoScalingGroup Min/Desired/MaxSize -> 1/2/3
+    * NodeInstanceType -> select EC2 flavor, based on the requirement (or choose default)
+    * NodeImageIdSSMParam --> EKS optimized linux2 AMI release (default 1.21, change the release value, if needed)
+    * NodeImageId --> (if using custome AMI then use AMIID, this option will override NodeImageIdSSMParam)
+    * NodeVolumeSize --> configure Root Volume size (default 50 gb)
+    * KeyName -> ee-default-keypair (or any ssh key you have)
+    * BootstrapArguments -> configure your k8 node labels, (leave default if not sure)
+    * useIPsFromStartOfSubnet -> use true (to use option 1 mentioned above) or false (to use option 2 i.e. cidr reservation)
     * VpcId -> vpc-eks-multus-cluster (that you created)
     * Subnets -> privateAz1-eks-multus-cluster (this is for main primary K8s networking network)
     * MultusSubnets -> multus1Az1 and Multus2Az1
     * MultusSecurityGroups -> multus-Sg-eks-multus-cluster
     * LambdaS3Bucket -> the one you created (eks-multus-cluster)
     * LambdaS3Key -> lambda_function.zip
+    * InterfaceTags --> (optional , leave it blank or put a key-value pair as Tags on the i/f)
     * *Next*, check "I acknowledge...", and then *Next*.
 
 * Once CloudFormation stack creation is completed, check *Output* part in the menu and copy the value of NodeInstanceRole (e.g. arn:aws:iam::153318889914:role/ng1-NodeInstanceRole-1C77OUUUP6686 --> this is an example, you have to use your own)
@@ -122,7 +157,7 @@
         "cniVersion": "0.3.0",
         "type": "ipvlan",
         "master": "eth1",
-        "mode": "l3",
+        "mode": "l2",
         "ipam": {
           "type": "host-local",
           "subnet": "10.0.4.0/24",
