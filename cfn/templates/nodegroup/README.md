@@ -61,7 +61,7 @@ For this Strategy use ```useIPsFromStartOfSubnet: false``` settings while creati
     * InterfaceTags --> (optional , leave it blank or put a key-value pair as Tags on the i/f)
     * *Next*, check "I acknowledge...", and then *Next*.
 
-* Once CloudFormation stack creation is completed, check *Output* part in the menu and copy the value of NodeInstanceRole (e.g. arn:aws:iam::153318889914:role/ng1-NodeInstanceRole-1C77OUUUP6686 --> this is an example, you have to use your own)
+* Once CloudFormation stack creation is completed, check *Output* part in the menu and copy the value of NodeInstanceRole (e.g. arn:aws:iam::XXXXXXXXXXXXX:role/ng1-NodeInstanceRole-1C77OUUUP6686 --> this is an example, you have to use your own)
 
 ## Login to Bastion Host
 * Usually in eksworkshop, we guide customer to experience Cloud9 (AWS IDE environment). But in this workshop, plan is to provide a general environment with your own Bastion Host EC2, where you have to install kubectl tools and other tools as needed.
@@ -118,7 +118,7 @@ For this Strategy use ```useIPsFromStartOfSubnet: false``` settings while creati
     namespace: kube-system
   data:
     mapRoles: |
-      - rolearn: arn:aws:iam::153318889914:role/ng1-NodeInstanceRole-1C77OUUUP6686
+      - rolearn: arn:aws:iam::XXXXXXXXXXXXX:role/ng1-NodeInstanceRole-1C77OUUUP6686
         username: system:node:{{EC2PrivateDNSName}}
         groups:
           - system:bootstrappers
