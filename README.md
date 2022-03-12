@@ -35,7 +35,8 @@ git clone https://github.com/aws-samples/eks-install-guide-for-multus
 
 1. [Provision Infra, EKS Cluster, and Bastion Host](./cfn/templates/infra/README.md).
 2. [Self Managed Nodegroup via CloudFormation](./cfn/templates/nodegroup/README.md).
-3. [Optional, CDK Managed Nodegroup](./cdk/README.md).
+3. [Automated Multus pod IP management on EKS](https://github.com/aws-samples/eks-automated-ipmgmt-multus-pods).
+4. [Optional, CDK Managed Nodegroup](./cdk/README.md).
 
 Each subdirectory contains additional installation and usage instructions. 
 
