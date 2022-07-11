@@ -9,7 +9,7 @@
 ### Option 1 Allocate Worker IPs statically via a custom lambda-based solution
 This solution works on the logical subnet sharing model, between the workers and pods. In this model, worker nodes always start taking the free IPs from the beginning of the subnet and the pods start taking the IPs from end of the subnet. With this allocation strategy the IPs wont clash between workers and Pods. To make this model work, worker ENIs must get IPs statically from the first free available IPs from the subnet and not use DHCP allocation. 
 
-![Worker IPs statically assigned from begining of the subnet](images/useIPsFromStartOfSubnet.png)
+![Worker IPs statically assigned from begining of the subnet](https://github.com/aws-samples/eks-install-guide-for-multus/blob/main/images/useIPsFromStartOfSubnet.png)
 
 
 For this Strategy use ```useIPsFromStartOfSubnet: true``` settings while creating the [Self managed Node Group]( ##-Self-managed-Node-Group-creation ) section.
