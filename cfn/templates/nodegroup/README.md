@@ -9,10 +9,28 @@
 ### Option 1 Allocate Worker IPs statically via a custom lambda-based solution
 This solution works on the logical subnet sharing model, between the workers and pods. In this model, worker nodes always start taking the free IPs from the beginning of the subnet and the pods start taking the IPs from end of the subnet. With this allocation strategy the IPs wont clash between workers and Pods. To make this model work, worker ENIs must get IPs statically from the first free available IPs from the subnet and not use DHCP allocation. 
 
+![Worker IPs statically assigned from begining of the subnet](images/useIPsFromStartOfSubnet.png)
+
+
 For this Strategy use ```useIPsFromStartOfSubnet: true``` settings while creating the [Self managed Node Group]( ##-Self-managed-Node-Group-creation ) section.
+
+#### Pros
+1.  No need of CIDR reservation on subnets or additional management, works for any subnet without additional management.
+2.  Any size subnet can be used, even as small as /28.
+3.  As the worker nodes always pick the first available IP address, extra management or pod IP address blocking isn’t required (option 3).
+
+#### Cons
+1.  If the subnet size is not planned properly, there is no protection mechanism, for worker to get an IP address in the planned range of Pod IPs. Ex: a /28 subnets with 11 usable IP in AWS VPC), if planned with 5 workers and 5 pods and autoscaling group max is increased to 7, then the new workers will take the Ip addresses from pod space.
+2.  Doesn’t protect the pod IP addresses from accidental use cases, i.e. if an EC2 instance is created without lambda function (manually or useIPsFromStartOfSubnet as False).
+3.  Slight complex logic of lambda function, to assign the ip addresses statically for the worker nodes.
+4.  increase the lambda execution time a little bit (10-60 secs), depending on the number of interfaces, so slightly increased instantiation time.
+
 
 ### Option 2: Use VPC subnet cidr reservation (static) for pods IP addresses  
 This solution works on the subnet CIDR separation model, between the workers and pods. In this model, we would create a reservation of the pod IP addresses chunks (min subnet cidr reservation allowed is /28) for explicit (static) allocation only. The unreserved chunk of the subnet CIDR would be available for the DHCP (default) allocation for the worker nodes behind the autoscaling group. Please refer to VPC subnet CIDR reservation for more details. This would ensure that worker would never encroach in the reserved CIDRs for pod.
+
+![Worker IPs from CIDR reservation](images/useCidrReservation.png)
+
 
 Below is an example of creating a subnet CIDR reservation. This needs to be done for each multus based subnets, for desired multus pod IP ranges.
 
