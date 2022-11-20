@@ -394,7 +394,7 @@ Parameters:
 
   MultusSubnets:
     Type: "List<AWS::EC2::Subnet::Id>"
-    Description: The List of Multus subnets from where multus 2ndary ENI will be connected to.
+    Description: The List of Multus subnets from where multus 2ndary ENI will be connected to. Subnets are attached in same order as provided, so 1st subnet in list as eth1 and 2nd as as eth2 and so on.
 
 
   MultusSecurityGroups:
