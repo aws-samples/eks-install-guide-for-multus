@@ -72,7 +72,7 @@ For this Strategy use ```useIPsFromStartOfSubnet: false``` settings while creati
     * useIPsFromStartOfSubnet -> use true (to use option 1 mentioned above) or false (to use option 2 i.e. cidr reservation)
     * VpcId -> vpc-eks-multus-cluster (that you created)
     * Subnets -> privateAz1-eks-multus-cluster (this is for main primary K8s networking network)
-    * MultusSubnets -> multus1Az1 and Multus2Az1
+    * MultusSubnets -> multus1Az1 and Multus2Az1 (subnets are attached in same order as provided, so multus1Az1 as eth1 and Multus2Az1 as eth2 )
     * MultusSecurityGroups -> multus-Sg-eks-multus-cluster
     * LambdaS3Bucket -> the one you created (eks-multus-cluster)
     * LambdaS3Key -> lambda_function.zip
