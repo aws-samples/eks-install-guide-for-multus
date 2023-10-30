@@ -26,7 +26,7 @@ For this Strategy use ```useIPsFromStartOfSubnet: true``` settings while creatin
 
 
 ### Option 2: Use VPC subnet cidr reservation (static) for pods IP addresses  
-This solution works on the subnet CIDR separation model, between the workers and pods. In this model, we would create a reservation of the pod IP addresses chunks (you can go as granualar as /32 CIDRs) for explicit (static) allocation only. The unreserved chunk of the subnet CIDR would be available for the DHCP (default) allocation for the worker nodes behind the autoscaling group. Please refer to VPC subnet CIDR reservation for more details. This would ensure that worker would never encroach in the reserved CIDRs for pod.
+This solution works on the subnet CIDR separation model, between the workers and pods. In this model, we would create a reservation of the pod IP addresses chunks (you can go as granular as /32) for explicit (static) allocation only. The unreserved chunk of the subnet CIDR would be available for the DHCP (default) allocation for the worker nodes behind the autoscaling group. Please refer to VPC subnet CIDR reservation for more details. This would ensure that worker would never encroach in the reserved CIDRs for pod.
 
 ![Worker IPs from CIDR reservation](https://github.com/aws-samples/eks-install-guide-for-multus/blob/main/images/useCidrReservation.png)
 
