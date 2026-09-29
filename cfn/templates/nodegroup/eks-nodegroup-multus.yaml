@@ -117,7 +117,7 @@ Parameters:
 
   DisableIMDSv1:
     Type: String
-    Default: "false"
+    Default: "true"
     AllowedValues:
       - "false"
       - "true"
